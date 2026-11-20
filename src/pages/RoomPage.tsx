@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Page } from '@/app/AppShell';
+import { useDorm } from '@/app/DormContext';
 import { MachineCard } from '@/components/MachineCard';
 import { api } from '@/services/api';
 import { useAsync } from '@/services/useAsync';
@@ -10,12 +12,26 @@ const FILTERS: (DisplayStatus | 'ALL')[] = ['ALL', 'AVAILABLE', 'IN_USE', 'DONE'
 /** 세탁실 현황 — 가장 많이 쓰는 화면, 확인 속도 최우선 */
 export default function RoomPage() {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('ALL');
-  const { data: machines, loading } = useAsync(() => api.getMachines('zion-b1'));
+  const { dormId = '' } = useDorm();
+  const { data, loading } = useAsync(async () => {
+    const { dorm, room } = await api.getDormitoryContext(dormId);
+    return { dorm, machines: await api.getMachines(room?.laundry_room_id ?? '') };
+  }, [dormId]);
 
-  const list = (machines ?? []).filter((m) => filter === 'ALL' || displayOf(m.current_status) === filter);
+  const list = (data?.machines ?? []).filter((m) => filter === 'ALL' || displayOf(m.current_status) === filter);
 
   return (
-    <Page title="시온관 B1 세탁실">
+    <Page
+      title={`${data?.dorm?.name ?? ''} 세탁실`}
+      right={
+        <Link
+          to="/select-dorm"
+          style={{ minHeight: 44, display: 'grid', placeItems: 'center', padding: '0 4px', color: 'var(--color-primary)', fontSize: 'var(--fs-caption)', fontWeight: 600 }}
+        >
+          생활관 변경
+        </Link>
+      }
+    >
       <div role="tablist" className="no-scrollbar" style={{ display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', paddingBottom: 'var(--space-4)' }}>
         {FILTERS.map((f) => {
           const active = f === filter;

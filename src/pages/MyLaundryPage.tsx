@@ -1,5 +1,6 @@
 import { BellRing } from 'lucide-react';
 import { Page } from '@/app/AppShell';
+import { useDorm } from '@/app/DormContext';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Character } from '@/components/Character';
 import { InfoBanner } from '@/components/InfoBanner';
@@ -11,14 +12,13 @@ const fmtTime = (iso?: string) =>
   iso ? new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '-';
 
 export default function MyLaundryPage() {
+  const { dormId = '' } = useDorm();
   const { data, loading } = useAsync(async () => {
-    const user = await api.getCurrentUser();
-    const [machine, requests] = await Promise.all([
-      user.machine_id ? api.getMachine(user.machine_id) : Promise.resolve(undefined),
-      api.getPickupRequestsForMe(),
-    ]);
+    const { room } = await api.getDormitoryContext(dormId);
+    const machine = await api.getMyMachine(room?.laundry_room_id ?? '');
+    const requests = machine ? await api.getPickupRequestsForMe(machine.machine_id) : [];
     return { machine, requests };
-  });
+  }, [dormId]);
   const m = data?.machine;
   const latestRequest = data?.requests.slice(-1)[0];
 

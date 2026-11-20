@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Clock, ChevronRight } from 'lucide-react';
+import { Clock, ChevronRight, ChevronDown } from 'lucide-react';
 import { Page } from '@/app/AppShell';
+import { useDorm } from '@/app/DormContext';
 import { Character } from '@/components/Character';
 import { InfoBanner } from '@/components/InfoBanner';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -12,21 +13,14 @@ import { DISPLAY_META, displayOf, type DisplayStatus } from '@/domain/status';
 const SUMMARY: DisplayStatus[] = ['AVAILABLE', 'IN_USE', 'DONE'];
 
 export default function HomePage() {
+  const { dormId = '' } = useDorm();
   const { data } = useAsync(async () => {
-    const user = await api.getCurrentUser();
-    const [dorms, rooms, machines] = await Promise.all([
-      api.getDormitories(),
-      api.getRoomsByDormitory(user.dormitory_id),
-      api.getMachines(user.laundry_room_id),
-    ]);
-    const [policy, requestsForMe] = await Promise.all([
-      api.getPeakPolicy(rooms[0]?.peak_policy_id ?? 'default'),
-      api.getPickupRequestsForMe(),
-    ]);
-    const dorm = dorms.find((d) => d.dormitory_id === user.dormitory_id);
-    const mine = machines.find((m) => m.machine_id === user.machine_id);
+    const { dorm, room, policy } = await api.getDormitoryContext(dormId);
+    const roomId = room?.laundry_room_id ?? '';
+    const [machines, mine] = await Promise.all([api.getMachines(roomId), api.getMyMachine(roomId)]);
+    const requestsForMe = mine ? await api.getPickupRequestsForMe(mine.machine_id) : [];
     return { dorm, machines, policy, mine, requestsForMe };
-  });
+  }, [dormId]);
 
   const count = (s: DisplayStatus) => data?.machines.filter((m) => displayOf(m.current_status) === s).length ?? 0;
   const peak = data?.policy ? isPeakNow(data.policy) : false;
@@ -46,8 +40,27 @@ export default function HomePage() {
           }}
         >
           <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 'var(--fs-caption)', opacity: 0.85 }}>{data?.dorm?.name ?? ' '} 세탁실</p>
-            <h2 style={{ fontSize: 'var(--fs-page)', fontWeight: 700, marginTop: 4, lineHeight: 1.35 }}>
+            {/* 생활관 이름을 누르면 바로 변경 */}
+            <Link
+              to="/select-dorm"
+              aria-label={`생활관 변경, 현재 ${data?.dorm?.name ?? ''}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 2,
+                minHeight: 32,
+                padding: '0 10px 0 12px',
+                marginLeft: -4,
+                borderRadius: 'var(--radius-pill)',
+                background: 'rgba(255,255,255,0.2)',
+                fontSize: 'var(--fs-caption)',
+                fontWeight: 600,
+              }}
+            >
+              {data?.dorm?.name ?? '생활관'} 세탁실
+              <ChevronDown size={16} aria-hidden />
+            </Link>
+            <h2 style={{ fontSize: 'var(--fs-page)', fontWeight: 700, marginTop: 'var(--space-2)', lineHeight: 1.35 }}>
               지금 {count('AVAILABLE')}대
               <br />
               이용 가능해요

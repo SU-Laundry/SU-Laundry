@@ -1,4 +1,7 @@
 // 운영 정책 값 — 파일럿 결과에 따라 조정하므로 하드코딩하지 않고 여기서만 관리한다.
+/** 기본 피크 시간 (관리자 설정 값 — 세탁실별 PeakPolicy의 기본값). 2026-11-20: 18~22시로 결정 */
+export const DEFAULT_PEAK = { start: '18:00', end: '22:00', slotMinutes: 60 } as const;
+
 export const POLICY = {
   /** 예약 시작 후 이 시간 안에 진동(사용 시작) 미감지 시 자동 해제 (N05) — 미확정 */
   graceTimeMinutes: 10,

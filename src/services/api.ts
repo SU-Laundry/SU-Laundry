@@ -1,6 +1,7 @@
 // 데이터 접근 계층. 지금은 목 데이터를 반환하고, 백엔드가 생기면 이 파일만 fetch로 교체한다.
 import * as mock from '@/mocks/data';
 import { POLICY } from '@/config/policy';
+import { displayOf } from '@/domain/status';
 import type { Machine, PickupRequest } from '@/domain/types';
 
 const delay = <T,>(v: T, ms = 150) => new Promise<T>((r) => setTimeout(() => r(v), ms));
@@ -11,20 +12,48 @@ const delay = <T,>(v: T, ms = 150) => new Promise<T>((r) => setTimeout(() => r(v
  */
 const live = (m: Machine): Machine => ({ ...m, last_seen_at: new Date().toISOString() });
 
+const roomOf = (dormitoryId: string) => mock.laundryRooms.find((r) => r.dormitory_id === dormitoryId);
+const machinesIn = (roomId: string) => mock.machines.filter((m) => m.laundry_room_id === roomId);
+
+/** 내가 지금 쓰고 있는(마지막 세션이 나인) 세탁기 */
+const myMachineIn = (roomId: string) =>
+  machinesIn(roomId).find((m) => mock.sessions.find((s) => s.session_id === m.current_session_id)?.user_id === mock.ME);
+
 export type PickupRequestError = 'NO_SESSION' | 'OWN_MACHINE' | 'IN_USE';
 
 export const api = {
   getDormitories: () => delay(mock.dormitories),
-  getCurrentUser: () => delay(mock.currentUser),
-  getRoomsByDormitory: (dormitoryId: string) =>
-    delay(mock.laundryRooms.filter((r) => r.dormitory_id === dormitoryId)),
-  getMachines: (roomId: string) =>
-    delay(mock.machines.filter((m) => m.laundry_room_id === roomId).map(live)),
+
+  /** 생활관 선택 화면용 요약: 세탁기 수, 지금 사용 가능 수 */
+  getDormitorySummaries: () =>
+    delay(
+      mock.dormitories.map((d) => {
+        const ms = machinesIn(roomOf(d.dormitory_id)?.laundry_room_id ?? '');
+        return {
+          ...d,
+          total: ms.length,
+          available: ms.filter((m) => displayOf(m.current_status) === 'AVAILABLE').length,
+        };
+      }),
+    ),
+
+  /** 선택한 생활관의 세탁실 + 피크 정책 */
+  getDormitoryContext: (dormitoryId: string) => {
+    const dorm = mock.dormitories.find((d) => d.dormitory_id === dormitoryId);
+    const room = roomOf(dormitoryId);
+    const policy = mock.peakPolicies.find((p) => p.peak_policy_id === room?.peak_policy_id);
+    return delay({ dorm, room, policy });
+  },
+
+  getMachines: (roomId: string) => delay(machinesIn(roomId).map(live)),
   getMachine: (machineId: string) => {
     const m = mock.machines.find((x) => x.machine_id === machineId);
     return delay(m && live(m));
   },
-  getPeakPolicy: (policyId: string) => delay(mock.peakPolicies.find((p) => p.peak_policy_id === policyId)),
+  getMyMachine: (roomId: string) => {
+    const m = myMachineIn(roomId);
+    return delay(m && live(m));
+  },
   getNotifications: () => delay(mock.notifications),
 
   /** 세탁기 상세에 필요한 맥락: 이전 사용자가 나인지, 내가 이미 요청했는지 */
@@ -42,9 +71,13 @@ export const api = {
     });
   },
 
-  /** 나(이전 사용자)에게 들어온 처리 전 수거 요청 */
-  getPickupRequestsForMe: () =>
-    delay(mock.pickupRequests.filter((r) => r.target_user_id === mock.ME && r.resolution === 'PENDING')),
+  /** 내 세탁기에 들어온 처리 전 수거 요청 */
+  getPickupRequestsForMe: (machineId: string) =>
+    delay(
+      mock.pickupRequests.filter(
+        (r) => r.machine_id === machineId && r.target_user_id === mock.ME && r.resolution === 'PENDING',
+      ),
+    ),
 
   /**
    * "세탁물이 남아 있어요" → 이전 사용자에게 수거 요청 (N03)

@@ -10,7 +10,9 @@ import MachineDetailPage from '@/pages/MachineDetailPage';
 import MyLaundryPage from '@/pages/MyLaundryPage';
 
 import OnboardingPage from '@/pages/OnboardingPage';
+import DormSelectPage from '@/pages/DormSelectPage';
 import { RootGate } from '@/app/RootGate';
+import { DormProvider } from '@/app/DormContext';
 
 // TODO: 세탁 완료 안내 화면
 const router = createBrowserRouter([
@@ -35,6 +37,7 @@ const router = createBrowserRouter([
           { path: '/machines/:machineId', element: <MachineDetailPage /> },
           { path: '/my-laundry', element: <MyLaundryPage /> },
           { path: '/reserve/done', element: <ReserveDonePage /> },
+          { path: '/select-dorm', element: <DormSelectPage /> },
         ],
       },
       { path: '*', element: <Navigate to="/" replace /> },
@@ -43,5 +46,9 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <DormProvider>
+      <RouterProvider router={router} />
+    </DormProvider>
+  );
 }

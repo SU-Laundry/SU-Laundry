@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock } from 'lucide-react';
 import { Page } from '@/app/AppShell';
+import { useDorm } from '@/app/DormContext';
 import { InfoBanner } from '@/components/InfoBanner';
 import { api } from '@/services/api';
 import { useAsync } from '@/services/useAsync';
@@ -11,10 +12,11 @@ import { POLICY } from '@/config/policy';
 /** 피크 시간 예약 — 예약 색(보라)으로 상태와 구분, 타임테이블 내부에 캐릭터 금지 */
 export default function ReservePage() {
   const navigate = useNavigate();
+  const { dormId = '' } = useDorm();
   const { data } = useAsync(async () => {
-    const [policy, machines] = await Promise.all([api.getPeakPolicy('default'), api.getMachines('zion-b1')]);
-    return { policy, machines };
-  });
+    const { room, policy } = await api.getDormitoryContext(dormId);
+    return { policy, machines: await api.getMachines(room?.laundry_room_id ?? '') };
+  }, [dormId]);
   const [slot, setSlot] = useState<string>();
   const [machineId, setMachineId] = useState<string>();
 
@@ -40,7 +42,7 @@ export default function ReservePage() {
 
         <section>
           <h2 className="section-title">시간 선택</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-2)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-2)' }}>
             {peakSlots(policy).map((s) => (
               <button key={s} onClick={() => setSlot(s)} aria-pressed={slot === s} style={selectStyle(slot === s)}>
                 {s}

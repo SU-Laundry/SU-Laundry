@@ -4,6 +4,8 @@ import { Sparkles } from 'lucide-react';
 import { Character } from '@/components/Character';
 import { StatusBadge } from '@/components/StatusBadge';
 import { prefs } from '@/services/prefs';
+import { DEFAULT_PEAK } from '@/config/policy';
+import { peakSlots } from '@/domain/peak';
 import type { MachineStatus } from '@/domain/types';
 
 /* ---------- 슬라이드별 예시 화면 (실제 UI 컴포넌트를 축소해 보여준다) ---------- */
@@ -27,13 +29,13 @@ function StatusPreview() {
 }
 
 function ReservePreview() {
-  const slots = ['19:00', '20:00', '21:00'];
+  const slots = peakSlots({ peak_policy_id: 'preview', start: DEFAULT_PEAK.start, end: DEFAULT_PEAK.end, slot_minutes: DEFAULT_PEAK.slotMinutes });
   return (
     <div className="ob-card">
       <p className="caption" style={{ marginBottom: 'var(--space-3)' }}>
-        피크 시간 19:00 ~ 22:00
+        피크 시간 {DEFAULT_PEAK.start} ~ {DEFAULT_PEAK.end}
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-2)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${slots.length}, 1fr)`, gap: 'var(--space-2)' }}>
         {slots.map((s) => (
           <span key={s} className={`ob-slot${s === '20:00' ? ' ob-slot--active' : ''}`}>
             {s}
