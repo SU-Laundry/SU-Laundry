@@ -1,0 +1,66 @@
+/* UI 디자인 기획서 5·6·7·15장 토큰. 색/간격/모서리는 반드시 이 변수로만 사용한다. */
+:root {
+  /* brand */
+  --color-primary: #1e88f9;
+  --color-primary-dark: #1357c8;
+  --color-sky: #dff1ff;
+  --color-bg: #f5f7fb;
+  --color-surface: #ffffff;
+  --color-text-main: #1f2d3d;
+  --color-text-sub: #6b7a90;
+  --color-border: #e3e8f2;
+  --color-blush: #f8c7d3;
+  --color-mint: #8fe3d4;
+  --color-yellow: #ffd76a;
+  --color-nav-inactive: #9aa6b8;
+
+  /* status: main / soft bg */
+  --status-available: #35c46a;
+  --status-available-bg: #eaf9ef;
+  --status-inuse: #1e88f9;
+  --status-inuse-bg: #eaf4ff;
+  --status-completed: #ffb340;
+  --status-completed-bg: #fff4df;
+  --status-pickup: #ff8b5e;
+  --status-pickup-bg: #fff0ea;
+  --status-reserved: #8c6cff;
+  --status-reserved-bg: #f1ecff;
+  --status-error: #f15b5b;
+  --status-error-bg: #fdecec;
+
+  /* radius */
+  --radius-xl: 24px;
+  --radius-lg: 20px;
+  --radius-md: 16px;
+  --radius-input: 14px;
+  --radius-sm: 12px;
+  --radius-pill: 999px;
+
+  /* spacing (4px grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+
+  /* type scale */
+  --fs-display: 28px;
+  --fs-page: 22px;
+  --fs-section: 18px;
+  --fs-body: 15px;
+  --fs-caption: 13px;
+  --fs-tiny: 11px;
+
+  --shadow-card: 0 8px 24px rgba(31, 45, 61, 0.08);
+  --font-sans: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+
+  /* layout */
+  --frame-max: 430px;
+  --header-h: 56px;
+  --nav-h: 64px;
+  --button-h: 52px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}

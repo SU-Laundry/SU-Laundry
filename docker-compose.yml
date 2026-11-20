@@ -1,0 +1,8 @@
+services:
+  web:
+    build: .
+    image: su-laundry-web
+    container_name: su-laundry-web
+    ports:
+      - "8080:80"
+    restart: unless-stopped
