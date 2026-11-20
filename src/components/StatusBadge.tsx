@@ -9,7 +9,6 @@ export function StatusBadge({ status }: { status: MachineStatus }) {
     <span
       style={{
         display: 'inline-flex',
-        alignSelf: 'flex-start',
         alignItems: 'center',
         gap: 4,
         height: 28,

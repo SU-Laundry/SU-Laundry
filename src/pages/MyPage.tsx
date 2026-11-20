@@ -8,6 +8,7 @@ const ITEMS = [
   { label: '예약 내역', to: '#' },
   { label: '내 세탁', to: '/my-laundry' },
   { label: '도움말', to: '#' },
+  { label: '서비스 소개 다시 보기', to: '/onboarding' },
   { label: '앱 정보', to: '#' },
 ];
 

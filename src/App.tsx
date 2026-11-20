@@ -9,27 +9,37 @@ import MyPage from '@/pages/MyPage';
 import MachineDetailPage from '@/pages/MachineDetailPage';
 import MyLaundryPage from '@/pages/MyLaundryPage';
 
-// TODO: 스플래시, 온보딩(3장), 세탁 완료 안내 화면
+import OnboardingPage from '@/pages/OnboardingPage';
+import { RootGate } from '@/app/RootGate';
+
+// TODO: 세탁 완료 안내 화면
 const router = createBrowserRouter([
   {
-    element: <TabLayout />,
+    // 스플래시 + 첫 실행 온보딩 게이트
+    element: <RootGate />,
     children: [
-      { path: '/', element: <HomePage /> },
-      { path: '/room', element: <RoomPage /> },
-      { path: '/reserve', element: <ReservePage /> },
-      { path: '/notifications', element: <NotificationsPage /> },
-      { path: '/my', element: <MyPage /> },
+      { path: '/onboarding', element: <OnboardingPage /> },
+      {
+        element: <TabLayout />,
+        children: [
+          { path: '/', element: <HomePage /> },
+          { path: '/room', element: <RoomPage /> },
+          { path: '/reserve', element: <ReservePage /> },
+          { path: '/notifications', element: <NotificationsPage /> },
+          { path: '/my', element: <MyPage /> },
+        ],
+      },
+      {
+        element: <StackLayout />,
+        children: [
+          { path: '/machines/:machineId', element: <MachineDetailPage /> },
+          { path: '/my-laundry', element: <MyLaundryPage /> },
+          { path: '/reserve/done', element: <ReserveDonePage /> },
+        ],
+      },
+      { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
-  {
-    element: <StackLayout />,
-    children: [
-      { path: '/machines/:machineId', element: <MachineDetailPage /> },
-      { path: '/my-laundry', element: <MyLaundryPage /> },
-      { path: '/reserve/done', element: <ReserveDonePage /> },
-    ],
-  },
-  { path: '*', element: <Navigate to="/" replace /> },
 ]);
 
 export default function App() {

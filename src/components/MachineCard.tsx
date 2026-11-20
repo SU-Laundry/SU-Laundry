@@ -20,7 +20,9 @@ export function MachineCard({ machine }: { machine: Machine }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <strong style={{ fontSize: 'var(--fs-section)' }}>{machine.machine_number}번</strong>
       </div>
-      <StatusBadge status={machine.current_status} />
+      <div>
+        <StatusBadge status={machine.current_status} />
+      </div>
       <p className="caption">{hint}</p>
     </Link>
   );
