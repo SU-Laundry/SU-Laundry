@@ -556,6 +556,57 @@ p {
   animation: pop 0.45s ease-out both;
 }
 
+/* ---------- 도움말 ---------- */
+.speech {
+  position: relative;
+  flex: 1;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-card);
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+}
+.speech::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  background: var(--color-surface);
+  transform: translateY(-50%) rotate(45deg);
+}
+.faq {
+  padding: 0;
+}
+.faq summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 52px;
+  padding: var(--space-3) var(--space-4);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+.faq__chevron {
+  flex: none;
+  color: var(--color-text-sub);
+  transition: transform 0.2s;
+}
+.faq[open] .faq__chevron {
+  transform: rotate(180deg);
+}
+.faq__answer {
+  padding: 0 var(--space-4) var(--space-4);
+  color: var(--color-text-sub);
+  line-height: 1.6;
+}
+
 /* ---------- 하단 확인 시트 ---------- */
 @keyframes sheet-up {
   from {

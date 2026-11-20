@@ -12,6 +12,8 @@ import MyLaundryPage from '@/pages/MyLaundryPage';
 import OnboardingPage from '@/pages/OnboardingPage';
 import DormSelectPage from '@/pages/DormSelectPage';
 import LaundryDonePage from '@/pages/LaundryDonePage';
+import ReservationsPage from '@/pages/ReservationsPage';
+import HelpPage from '@/pages/HelpPage';
 import { RootGate } from '@/app/RootGate';
 import { DormProvider } from '@/app/DormContext';
 
@@ -39,6 +41,8 @@ const router = createBrowserRouter([
           { path: '/reserve/done', element: <ReserveDonePage /> },
           { path: '/select-dorm', element: <DormSelectPage /> },
           { path: '/laundry-done', element: <LaundryDonePage /> },
+          { path: '/reservations', element: <ReservationsPage /> },
+          { path: '/help', element: <HelpPage /> },
         ],
       },
       { path: '*', element: <Navigate to="/" replace /> },

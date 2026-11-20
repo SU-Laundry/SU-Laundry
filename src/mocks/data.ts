@@ -10,6 +10,7 @@ import type {
   MachineStatus,
   PeakPolicy,
   PickupRequest,
+  Reservation,
 } from '@/domain/types';
 
 const now = Date.now();
@@ -114,6 +115,32 @@ export const pickupRequests: PickupRequest[] = machines
     requested_at: minsAgo(4),
     resolution: 'PENDING' as const,
   }));
+
+/** 지난 예약 기록 — 각 생활관마다 이용 완료 / 미이용 자동 해제 / 취소 1건씩 (예약 내역 화면 시연용) */
+const daysAgoAt = (days: number, hhmm: string) => {
+  const t = new Date(now);
+  t.setDate(t.getDate() - days);
+  const [h, m] = hhmm.split(':').map(Number);
+  t.setHours(h, m, 0, 0);
+  return t;
+};
+
+export const reservations: Reservation[] = DORM_SPECS.flatMap((d) => {
+  const num = (n: number) => ((n - 1) % d.washers) + 1;
+  const past = (key: string, days: number, hhmm: string, n: number, status: Reservation['reservation_status']): Reservation => {
+    const start = daysAgoAt(days, hhmm);
+    return {
+      reservation_id: `r-${d.dormitory_id}-${key}`,
+      user_id: ME,
+      machine_id: `${d.dormitory_id}-${num(n)}`,
+      start_time: start.toISOString(),
+      end_time: new Date(start.getTime() + DEFAULT_PEAK.slotMinutes * 60_000).toISOString(),
+      reservation_status: status,
+      checked_in_at: status === 'DONE' ? new Date(start.getTime() + 4 * 60_000).toISOString() : undefined,
+    };
+  };
+  return [past('a', 1, '19:00', 2, 'DONE'), past('b', 2, '20:00', 5, 'AUTO_RELEASED'), past('c', 3, '18:00', 1, 'CANCELLED')];
+});
 
 export const notifications: AppNotification[] = [
   { id: 'a0', type: 'N03_PICKUP_REQUEST', message: '3번 세탁기에 세탁물이 남아 있습니다. 확인 부탁드립니다.', created_at: minsAgo(4), read: false },

@@ -1,8 +1,8 @@
 // 데이터 접근 계층. 지금은 목 데이터를 반환하고, 백엔드가 생기면 이 파일만 fetch로 교체한다.
 import * as mock from '@/mocks/data';
-import { POLICY } from '@/config/policy';
+import { DEFAULT_PEAK, POLICY } from '@/config/policy';
 import { displayOf } from '@/domain/status';
-import type { Machine, PickupRequest } from '@/domain/types';
+import type { Machine, PickupRequest, Reservation } from '@/domain/types';
 
 const delay = <T,>(v: T, ms = 150) => new Promise<T>((r) => setTimeout(() => r(v), ms));
 
@@ -20,6 +20,29 @@ const myMachineIn = (roomId: string) =>
   machinesIn(roomId).find((m) => mock.sessions.find((s) => s.session_id === m.current_session_id)?.user_id === mock.ME);
 
 export type PickupRequestError = 'NO_SESSION' | 'OWN_MACHINE' | 'IN_USE';
+export type ReservationError = 'ACTIVE_EXISTS' | 'TAKEN' | 'NOT_FOUND' | 'STARTED';
+
+/** 화면용 예약: 세탁기 번호 포함, 상태는 시간 경과까지 반영 */
+export type ReservationView = Reservation & { machine_number: number };
+
+/**
+ * 예약 상태를 시간 기준으로 보정 (실서버에서는 서버가 처리할 일).
+ * 예약 시작 후 Grace Time이 지나도 사용 시작이 없으면 미이용 자동 해제(N05).
+ */
+function effectiveStatus(r: Reservation, now = Date.now()): Reservation['reservation_status'] {
+  const graceEnd = new Date(r.start_time).getTime() + POLICY.graceTimeMinutes * 60_000;
+  if (r.reservation_status === 'BOOKED' && now > graceEnd) return 'AUTO_RELEASED';
+  return r.reservation_status;
+}
+
+const toView = (r: Reservation): ReservationView => ({
+  ...r,
+  reservation_status: effectiveStatus(r),
+  machine_number: mock.machines.find((m) => m.machine_id === r.machine_id)?.machine_number ?? 0,
+});
+
+const myActiveReservation = () =>
+  mock.reservations.map(toView).find((r) => r.user_id === mock.ME && (r.reservation_status === 'BOOKED' || r.reservation_status === 'CHECKED_IN'));
 
 export const api = {
   getDormitories: () => delay(mock.dormitories),
@@ -65,6 +88,56 @@ export const api = {
     return delay({ machine: m && live(m), session, requests });
   },
   getNotifications: () => delay(mock.notifications),
+
+  /* ---------- 예약 ---------- */
+
+  /** 내 예약 내역 (현재 생활관 세탁실 기준), 최신순 */
+  getMyReservations: (dormitoryId: string) => {
+    const roomId = roomOf(dormitoryId)?.laundry_room_id;
+    const inRoom = new Set(machinesIn(roomId ?? '').map((m) => m.machine_id));
+    return delay(
+      mock.reservations
+        .filter((r) => r.user_id === mock.ME && inRoom.has(r.machine_id))
+        .map(toView)
+        .sort((a, b) => b.start_time.localeCompare(a.start_time)),
+    );
+  },
+
+  /** 진행 중이거나 예정된 내 예약 (생활관 무관 — 동시에 1개만 허용) */
+  getMyActiveReservation: () => delay(myActiveReservation()),
+
+  /**
+   * 예약하기 — 슬롯의 다음 시작 시각(지났으면 내일)으로 만든다.
+   * 정책: 동시에 POLICY.maxActiveReservationsPerUser(1)개까지, 같은 세탁기·같은 시각 중복 불가.
+   */
+  createReservation: async (machineId: string, start: Date): Promise<ReservationView> => {
+    if (myActiveReservation()) throw new Error('ACTIVE_EXISTS' satisfies ReservationError);
+    const taken = mock.reservations
+      .map(toView)
+      .some((r) => r.machine_id === machineId && r.start_time === start.toISOString() && r.reservation_status === 'BOOKED');
+    if (taken) throw new Error('TAKEN' satisfies ReservationError);
+
+    const r: Reservation = {
+      reservation_id: `r-${Date.now()}`,
+      user_id: mock.ME,
+      machine_id: machineId,
+      start_time: start.toISOString(),
+      end_time: new Date(start.getTime() + DEFAULT_PEAK.slotMinutes * 60_000).toISOString(),
+      reservation_status: 'BOOKED',
+    };
+    mock.reservations.push(r);
+    // TODO(백엔드): 시작 POLICY.reservationReminderMinutes 전 N04 PUSH 예약
+    return delay(toView(r), 300);
+  },
+
+  /** 예약 취소 — 시작 전에만 가능 (기획서 17.2) */
+  cancelReservation: async (reservationId: string): Promise<ReservationView> => {
+    const r = mock.reservations.find((x) => x.reservation_id === reservationId);
+    if (!r) throw new Error('NOT_FOUND' satisfies ReservationError);
+    if (new Date(r.start_time).getTime() <= Date.now()) throw new Error('STARTED' satisfies ReservationError);
+    r.reservation_status = 'CANCELLED';
+    return delay(toView(r), 300);
+  },
 
   /** 세탁기 상세에 필요한 맥락: 이전 사용자가 나인지, 내가 이미 요청했는지 */
   getMachineContext: (machineId: string) => {

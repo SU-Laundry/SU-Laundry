@@ -14,6 +14,18 @@ export function isPeakNow(p: PeakPolicy, at = new Date()) {
   return n >= toMin(p.start) && n < toMin(p.end);
 }
 
+/**
+ * 슬롯("HH:mm")의 다음 시작 시각.
+ * 오늘 그 시각이 이미 지났으면 내일 같은 시각으로 — 지나간 시간에는 예약하지 않는다.
+ */
+export function nextSlotStart(slot: string, now = Date.now()): Date {
+  const [h, m] = slot.split(':').map(Number);
+  const t = new Date(now);
+  t.setHours(h, m, 0, 0);
+  if (t.getTime() <= now) t.setDate(t.getDate() + 1);
+  return t;
+}
+
 export function peakSlots(p: PeakPolicy): string[] {
   const out: string[] = [];
   for (let t = toMin(p.start); t < toMin(p.end); t += p.slot_minutes) out.push(toHHmm(t));

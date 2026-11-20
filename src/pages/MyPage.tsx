@@ -11,9 +11,9 @@ export default function MyPage() {
 
   const items: { label: string; to: string; value?: string }[] = [
     { label: '거주 생활관', to: '/select-dorm', value: dormName },
-    { label: '예약 내역', to: '#' },
+    { label: '예약 내역', to: '/reservations' },
     { label: '내 세탁', to: '/my-laundry' },
-    { label: '도움말', to: '#' },
+    { label: '도움말', to: '/help' },
     { label: '서비스 소개 다시 보기', to: '/onboarding' },
     { label: '앱 정보', to: '#' },
   ];
