@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { SplashScreen } from '@/pages/SplashScreen';
 import { prefs } from '@/services/prefs';
 import { useDorm } from './DormContext';
+import { DeviceButtons, DeviceChrome } from './DeviceChrome';
 
 const SPLASH_MS = 1500;
 const FADE_MS = 300;
@@ -35,10 +36,15 @@ export function RootGate() {
   }
 
   // .device: 실제 폰에선 화면 전체, PC 화면에선 폰 모양 프레임 (global.css 참고)
+  // 스플래시(파란 배경) 위에서는 상태바 글자를 흰색으로
   return (
-    <div className="device">
-      <Outlet />
-      {phase !== 'done' && <SplashScreen leaving={phase === 'leaving'} />}
+    <div className="device-shell">
+      <div className="device">
+        <Outlet />
+        {phase !== 'done' && <SplashScreen leaving={phase === 'leaving'} />}
+        <DeviceChrome light={phase === 'show'} />
+      </div>
+      <DeviceButtons />
     </div>
   );
 }

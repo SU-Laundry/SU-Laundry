@@ -54,10 +54,15 @@ p {
   justify-content: center;
 }
 
+.device-shell {
+  position: relative;
+  width: 100%;
+  max-width: var(--frame-max);
+}
+
 .device {
   position: relative; /* 스플래시·하단 시트의 기준 */
   width: 100%;
-  max-width: var(--frame-max);
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
@@ -82,14 +87,133 @@ p {
   }
   .device {
     height: min(932px, calc(100dvh - 48px));
-    border-radius: 48px;
+    border-radius: 54px;
+    /* 검은 베젤 + 티타늄 테두리 */
     box-shadow:
-      0 0 0 10px #1f2d3d,
-      0 0 0 11px #3a4a5e,
-      0 30px 80px rgba(31, 45, 61, 0.28);
-    /* 폰의 상태바·홈 인디케이터 자리를 흉내 내서 둥근 모서리에 내용이 붙지 않게 */
-    --safe-top: 28px;
-    --safe-bottom: 14px;
+      0 0 0 11px #121418,
+      0 0 0 12.5px #5b6270,
+      0 0 0 14px #a9b0bb,
+      0 30px 80px rgba(31, 45, 61, 0.3);
+    /* 상태바(다이내믹 아일랜드)·홈 인디케이터 자리 — 실제 아이폰 safe-area와 비슷하게 */
+    --safe-top: 50px;
+    --safe-bottom: 24px;
+  }
+}
+
+/* ---------- PC 폰 프레임 장식 (상태바·다이내믹 아일랜드·홈 인디케이터·측면 버튼) ----------
+ * 기본은 숨김, 위 PC 미디어쿼리에서만 보인다. 클릭은 통과시킨다.
+ */
+.device-chrome,
+.device-buttons {
+  display: none;
+  pointer-events: none;
+}
+
+.device-chrome {
+  position: absolute;
+  inset: 0;
+  z-index: 1000; /* 스플래시·하단 시트보다 위 */
+  color: var(--color-text-main);
+  transition: color 0.3s ease;
+}
+.device-chrome--light {
+  color: #fff;
+}
+
+.device-chrome__status {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0 30px 0 34px;
+  font-weight: 600;
+}
+
+.device-chrome__time {
+  justify-self: center;
+  font-size: 16px;
+  letter-spacing: -0.2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.device-chrome__island {
+  width: 122px;
+  height: 35px;
+  border-radius: 999px;
+  background: #000;
+  position: relative;
+  top: 1px;
+}
+/* 아일랜드 안 카메라 렌즈 느낌 */
+.device-chrome__island::after {
+  content: '';
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  width: 11px;
+  height: 11px;
+  margin-top: -5.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #2a3550 0%, #0b0f1a 55%, #000 100%);
+  box-shadow: inset 0 0 0 1.5px #10141c;
+}
+
+.device-chrome__icons {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.device-chrome__home {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  width: 136px;
+  height: 5px;
+  margin-left: -68px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.85;
+}
+
+.device-buttons i {
+  position: absolute;
+  width: 4px;
+  background: linear-gradient(90deg, #7d8592, #b9c0ca);
+  border-radius: 2px;
+}
+.device-buttons__action {
+  left: -17px;
+  top: 118px;
+  height: 32px;
+}
+.device-buttons__vol-up {
+  left: -17px;
+  top: 178px;
+  height: 58px;
+}
+.device-buttons__vol-down {
+  left: -17px;
+  top: 250px;
+  height: 58px;
+}
+.device-buttons__power {
+  right: -17px;
+  top: 200px;
+  height: 92px;
+  background: linear-gradient(270deg, #7d8592, #b9c0ca);
+}
+
+/* 위 PC 프레임 미디어쿼리와 같은 조건 — 기본 숨김 규칙보다 뒤에 있어야 한다 */
+@media (min-width: 600px) and (min-height: 720px) and (hover: hover) and (pointer: fine) {
+  .device-chrome,
+  .device-buttons {
+    display: block;
   }
 }
 
