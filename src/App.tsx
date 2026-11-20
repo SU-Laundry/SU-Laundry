@@ -11,10 +11,10 @@ import MyLaundryPage from '@/pages/MyLaundryPage';
 
 import OnboardingPage from '@/pages/OnboardingPage';
 import DormSelectPage from '@/pages/DormSelectPage';
+import LaundryDonePage from '@/pages/LaundryDonePage';
 import { RootGate } from '@/app/RootGate';
 import { DormProvider } from '@/app/DormContext';
 
-// TODO: 세탁 완료 안내 화면
 const router = createBrowserRouter([
   {
     // 스플래시 + 첫 실행 온보딩 게이트
@@ -38,6 +38,7 @@ const router = createBrowserRouter([
           { path: '/my-laundry', element: <MyLaundryPage /> },
           { path: '/reserve/done', element: <ReserveDonePage /> },
           { path: '/select-dorm', element: <DormSelectPage /> },
+          { path: '/laundry-done', element: <LaundryDonePage /> },
         ],
       },
       { path: '*', element: <Navigate to="/" replace /> },

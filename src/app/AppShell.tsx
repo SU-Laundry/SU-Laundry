@@ -22,7 +22,20 @@ export function StackLayout() {
   );
 }
 
-export function Page({ title, back, right, children }: { title?: string; back?: boolean; right?: ReactNode; children: ReactNode }) {
+export function Page({
+  title,
+  back,
+  right,
+  footer,
+  children,
+}: {
+  title?: string;
+  back?: boolean;
+  right?: ReactNode;
+  /** 하단 고정 영역 (주요 CTA 버튼 등) — 스크롤 영역 밖, safe-area 반영 */
+  footer?: ReactNode;
+  children: ReactNode;
+}) {
   const navigate = useNavigate();
   return (
     <>
@@ -40,6 +53,7 @@ export function Page({ title, back, right, children }: { title?: string; back?: 
         {right}
       </header>
       <main className="app-content">{children}</main>
+      {footer && <footer className="app-footer">{footer}</footer>}
     </>
   );
 }

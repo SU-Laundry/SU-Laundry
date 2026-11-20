@@ -117,6 +117,15 @@ p {
   padding: 0 var(--space-5) var(--space-6);
 }
 
+.app-footer {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5) calc(var(--safe-bottom) + var(--space-4));
+  background: var(--color-bg);
+}
+
 .stack {
   display: flex;
   flex-direction: column;
@@ -464,6 +473,87 @@ p {
   .onboarding__bottom .btn {
     height: 48px; /* 터치 영역 44px 이상 유지 */
   }
+}
+
+/* ---------- 세탁 완료 안내 ---------- */
+.done-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-top: var(--space-4);
+}
+.done-hero__glow {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 180px;
+  height: 180px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--color-sky) 0%, rgba(223, 241, 255, 0) 70%);
+}
+.done-hero > :not(.done-hero__glow):not(.bubble) {
+  position: relative; /* 글로우 위로 */
+}
+.done-bubble {
+  background: rgba(30, 136, 249, 0.08);
+  border-color: rgba(30, 136, 249, 0.18);
+}
+.done-hero__title {
+  margin-top: var(--space-4);
+  font-size: var(--fs-display);
+  font-weight: 700;
+}
+/* 짧은 화면에서 캐릭터가 아래 안내(수거 요청 등)를 밀어내지 않도록 높이 비례 축소 */
+.done-hero img {
+  width: clamp(80px, 15dvh, 128px) !important;
+}
+@media (max-height: 720px) {
+  .done-hero {
+    padding-top: 0;
+  }
+  .done-hero__title {
+    margin-top: var(--space-2);
+    font-size: 24px;
+  }
+}
+.done-hero__sub {
+  margin-top: var(--space-1);
+  color: var(--color-text-sub);
+}
+.done-rows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 16px;
+  margin: var(--space-4) 0 0;
+  font-size: var(--fs-body);
+}
+.done-rows dt {
+  color: var(--color-text-sub);
+}
+.done-rows dd {
+  margin: 0;
+  text-align: right;
+}
+
+/* 캐릭터 등장 — 가볍게 한 번 튀어오름 */
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(8px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  100% {
+    transform: none;
+  }
+}
+.pop {
+  animation: pop 0.45s ease-out both;
 }
 
 /* ---------- 하단 확인 시트 ---------- */

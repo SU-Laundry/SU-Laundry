@@ -54,6 +54,16 @@ export const api = {
     const m = myMachineIn(roomId);
     return delay(m && live(m));
   },
+
+  /** 세탁 완료 안내 화면용: 내 세탁기 + 세션(시작·완료·수거 시각) + 받은 수거 요청 */
+  getMyLaundry: (roomId: string) => {
+    const m = myMachineIn(roomId);
+    const session = mock.sessions.find((s) => s.session_id === m?.current_session_id);
+    const requests = m
+      ? mock.pickupRequests.filter((r) => r.machine_id === m.machine_id && r.target_user_id === mock.ME && r.resolution === 'PENDING')
+      : [];
+    return delay({ machine: m && live(m), session, requests });
+  },
   getNotifications: () => delay(mock.notifications),
 
   /** 세탁기 상세에 필요한 맥락: 이전 사용자가 나인지, 내가 이미 요청했는지 */

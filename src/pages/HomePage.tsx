@@ -105,7 +105,12 @@ export default function HomePage() {
         {data?.mine && (
           <section>
             <h2 className="section-title">내 세탁</h2>
-            <Link to="/my-laundry" className="card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+            {/* 세탁이 끝났으면 완료 안내로, 아니면 내 세탁 상세로 */}
+            <Link
+              to={displayOf(data.mine.current_status) === 'DONE' ? '/laundry-done' : '/my-laundry'}
+              className="card"
+              style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}
+            >
               <div style={{ flex: 1 }}>
                 <strong>{data.mine.machine_number}번 세탁기</strong>
                 <div style={{ marginTop: 'var(--space-2)' }}>
