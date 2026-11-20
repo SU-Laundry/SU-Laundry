@@ -328,6 +328,12 @@ p {
   display: flex;
   flex-direction: column;
   padding: 0 var(--space-5);
+  /* 최후의 안전장치: 그래도 높이가 모자라면 이 장 안에서만 세로 스크롤 */
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.onboarding__slide::-webkit-scrollbar {
+  display: none;
 }
 .onboarding__visual {
   flex: 1;
@@ -339,7 +345,11 @@ p {
   background: var(--color-sky);
   border-radius: var(--radius-xl);
   padding: var(--space-6) var(--space-5);
-  min-height: 0;
+  /* min-height를 0으로 두지 않는다 → 내용보다 작아지지 않고, 모자라면 슬라이드가 스크롤됨(겹침 방지) */
+}
+/* 캐릭터는 화면 높이에 비례해 줄어든다 (큰 폰 112px ↔ 아주 짧은 화면 64px) */
+.onboarding__visual img {
+  width: clamp(64px, 14dvh, 112px) !important;
 }
 .onboarding__text {
   padding: var(--space-6) var(--space-1) 0;
@@ -410,6 +420,50 @@ p {
   border-color: var(--status-reserved);
   background: var(--status-reserved-bg);
   color: var(--status-reserved);
+}
+
+/* ---------- 짧은 화면 대응 (SE·소형 안드로이드를 브라우저로 볼 때 ~550px) ---------- */
+@media (max-height: 720px) {
+  .onboarding__top {
+    min-height: calc(44px + var(--safe-top));
+  }
+  .onboarding__visual {
+    gap: var(--space-3);
+    padding: var(--space-4);
+  }
+  .onboarding__text {
+    padding-top: var(--space-4);
+  }
+  .onboarding__text h1 {
+    font-size: 20px;
+  }
+  .onboarding__bottom {
+    gap: var(--space-4);
+    padding-top: var(--space-4);
+    padding-bottom: calc(var(--safe-bottom) + var(--space-4));
+  }
+  .ob-card {
+    padding: var(--space-3) var(--space-4);
+  }
+  .ob-row {
+    min-height: 34px;
+  }
+  .ob-slot {
+    height: 34px;
+  }
+}
+
+@media (max-height: 600px) {
+  .onboarding__text p {
+    font-size: var(--fs-caption);
+    margin-top: var(--space-1);
+  }
+  .onboarding__bottom {
+    gap: var(--space-3);
+  }
+  .onboarding__bottom .btn {
+    height: 48px; /* 터치 영역 44px 이상 유지 */
+  }
 }
 
 /* ---------- 하단 확인 시트 ---------- */
