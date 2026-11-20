@@ -7,6 +7,7 @@ export type MachineStatus =
   | 'COMPLETED' // 세탁 완료
   | 'WAITING_PICKUP' // 수거 대기
   | 'PICKUP_ACTION_DETECTED' // 수거 동작 감지 (수거 "완료"가 아님)
+  | 'MAINTENANCE' // 점검 중 — 고장 신고 접수 시 (관리자가 점검을 마치면 해제)
   | 'UNKNOWN'; // 센서 연결 끊김 → 확인 필요
 
 export interface Dormitory {
@@ -36,6 +37,27 @@ export interface Machine {
   reserved_from?: string;
   /** 마지막(현재) 세탁 세션 — 수거 요청 시 "이전 사용자"를 찾는 기준 */
   current_session_id?: string;
+  /** 점검 시작 시각 (MAINTENANCE) — 고장 신고가 접수된 시각 */
+  maintenance_since?: string;
+}
+
+export type MachineType = Machine['machine_type'];
+
+/** 고장 신고 — 사용자가 직접 올리는 신고 (센서와 무관). 접수되면 기기를 '점검 중'으로 바꾼다 */
+export type FaultCategory = 'NOT_WORKING' | 'LEAK' | 'NOISE' | 'DOOR' | 'NOT_DRYING' | 'OTHER';
+export type FaultReportStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+
+export interface FaultReport {
+  report_id: string;
+  machine_id: string;
+  reporter_user_id: string;
+  category: FaultCategory;
+  description: string;
+  /** 첨부 사진 — 목에선 압축한 data URL, 서버 연동 후엔 업로드된 파일 URL */
+  photo_urls: string[];
+  reported_at: string;
+  status: FaultReportStatus;
+  resolved_at?: string;
 }
 
 export type ReservationStatus = 'BOOKED' | 'CHECKED_IN' | 'CANCELLED' | 'AUTO_RELEASED' | 'DONE';

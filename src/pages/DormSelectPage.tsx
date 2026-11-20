@@ -66,7 +66,7 @@ export default function DormSelectPage() {
                   <div style={{ flex: 1 }}>
                     <p style={{ fontSize: 'var(--fs-section)', fontWeight: 600 }}>{d.name}</p>
                     <p className="caption" style={{ marginTop: 2 }}>
-                      세탁기 {d.total}대 · 지금 {d.available}대 사용 가능
+                      세탁기 {d.washers}대 · 건조기 {d.dryers}대 · 지금 {d.available}대 사용 가능
                     </p>
                   </div>
                   <span

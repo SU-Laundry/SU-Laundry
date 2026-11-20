@@ -2,7 +2,7 @@
 import * as mock from '@/mocks/data';
 import { DEFAULT_PEAK, POLICY } from '@/config/policy';
 import { displayOf } from '@/domain/status';
-import type { Machine, PickupRequest, Reservation } from '@/domain/types';
+import type { FaultCategory, FaultReport, Machine, PickupRequest, Reservation } from '@/domain/types';
 
 const delay = <T,>(v: T, ms = 150) => new Promise<T>((r) => setTimeout(() => r(v), ms));
 
@@ -13,14 +13,26 @@ const delay = <T,>(v: T, ms = 150) => new Promise<T>((r) => setTimeout(() => r(v
 const live = (m: Machine): Machine => ({ ...m, last_seen_at: new Date().toISOString() });
 
 const roomOf = (dormitoryId: string) => mock.laundryRooms.find((r) => r.dormitory_id === dormitoryId);
-const machinesIn = (roomId: string) => mock.machines.filter((m) => m.laundry_room_id === roomId);
+/** 세탁실의 기기 — 세탁기 먼저, 그다음 건조기 (각각 번호순) */
+const machinesIn = (roomId: string) =>
+  mock.machines
+    .filter((m) => m.laundry_room_id === roomId)
+    .sort((a, b) => (a.machine_type === b.machine_type ? a.machine_number - b.machine_number : a.machine_type === 'WASHER' ? -1 : 1));
 
 /** 내가 지금 쓰고 있는(마지막 세션이 나인) 세탁기 */
 const myMachineIn = (roomId: string) =>
   machinesIn(roomId).find((m) => mock.sessions.find((s) => s.session_id === m.current_session_id)?.user_id === mock.ME);
 
 export type PickupRequestError = 'NO_SESSION' | 'OWN_MACHINE' | 'IN_USE';
-export type ReservationError = 'ACTIVE_EXISTS' | 'TAKEN' | 'NOT_FOUND' | 'STARTED';
+export type ReservationError = 'ACTIVE_EXISTS' | 'TAKEN' | 'NOT_FOUND' | 'STARTED' | 'RESTRICTED' | 'UNAVAILABLE';
+export type FaultReportError = 'NOT_FOUND' | 'EMPTY';
+
+/** 노쇼 현황: 지금까지 센 횟수(제한 끝나면 0부터 다시), 예약 제한 중이면 해제 시각 */
+export interface NoShowStatus {
+  count: number;
+  limit: number;
+  restrictedUntil?: string;
+}
 
 /** 화면용 예약: 세탁기 번호 포함, 상태는 시간 경과까지 반영 */
 export type ReservationView = Reservation & { machine_number: number };
@@ -41,6 +53,30 @@ const toView = (r: Reservation): ReservationView => ({
   machine_number: mock.machines.find((m) => m.machine_id === r.machine_id)?.machine_number ?? 0,
 });
 
+/**
+ * 노쇼 패널티 계산 (실서버에서는 서버가 User.reservation_restriction_status로 관리).
+ * 미이용 자동 해제가 POLICY.noShow.limit회 쌓이면 마지막 노쇼 시각부터 restrictDays일 동안 예약 불가,
+ * 제한 기간이 끝나면 횟수는 0부터 다시 센다.
+ */
+function noShowStatus(now = Date.now()): NoShowStatus {
+  const { limit, restrictDays } = POLICY.noShow;
+  const times = mock.reservations
+    .filter((r) => r.user_id === mock.ME && effectiveStatus(r, now) === 'AUTO_RELEASED')
+    .map((r) => new Date(r.start_time).getTime() + POLICY.graceTimeMinutes * 60_000)
+    .sort((a, b) => a - b);
+  let count = 0;
+  let until = 0;
+  for (const t of times) {
+    if (t < until) continue; // 제한 기간 중엔 예약 자체가 불가 — 방어적으로 무시
+    count += 1;
+    if (count >= limit) {
+      until = t + restrictDays * 86_400_000;
+      count = 0;
+    }
+  }
+  return until > now ? { count: limit, limit, restrictedUntil: new Date(until).toISOString() } : { count, limit };
+}
+
 const myActiveReservation = () =>
   mock.reservations.map(toView).find((r) => r.user_id === mock.ME && (r.reservation_status === 'BOOKED' || r.reservation_status === 'CHECKED_IN'));
 
@@ -55,6 +91,8 @@ export const api = {
         return {
           ...d,
           total: ms.length,
+          washers: ms.filter((m) => m.machine_type === 'WASHER').length,
+          dryers: ms.filter((m) => m.machine_type === 'DRYER').length,
           available: ms.filter((m) => displayOf(m.current_status) === 'AVAILABLE').length,
         };
       }),
@@ -106,12 +144,19 @@ export const api = {
   /** 진행 중이거나 예정된 내 예약 (생활관 무관 — 동시에 1개만 허용) */
   getMyActiveReservation: () => delay(myActiveReservation()),
 
+  /** 노쇼 횟수·예약 제한 여부 */
+  getNoShowStatus: () => delay(noShowStatus()),
+
   /**
    * 예약하기 — 슬롯의 다음 시작 시각(지났으면 내일)으로 만든다.
-   * 정책: 동시에 POLICY.maxActiveReservationsPerUser(1)개까지, 같은 세탁기·같은 시각 중복 불가.
+   * 정책: 동시에 POLICY.maxActiveReservationsPerUser(1)개까지, 같은 세탁기·같은 시각 중복 불가,
+   * 노쇼 누적으로 제한 중이면 불가, 점검 중인 기기는 불가.
    */
   createReservation: async (machineId: string, start: Date): Promise<ReservationView> => {
+    if (noShowStatus().restrictedUntil) throw new Error('RESTRICTED' satisfies ReservationError);
     if (myActiveReservation()) throw new Error('ACTIVE_EXISTS' satisfies ReservationError);
+    const machine = mock.machines.find((m) => m.machine_id === machineId);
+    if (!machine || machine.current_status === 'MAINTENANCE') throw new Error('UNAVAILABLE' satisfies ReservationError);
     const taken = mock.reservations
       .map(toView)
       .some((r) => r.machine_id === machineId && r.start_time === start.toISOString() && r.reservation_status === 'BOOKED');
@@ -146,12 +191,57 @@ export const api = {
     const myRequest = mock.pickupRequests
       .filter((r) => r.session_id === session?.session_id && r.reporter_user_id === mock.ME)
       .slice(-1)[0];
+    const faultReport = mock.faultReports
+      .filter((r) => r.machine_id === machineId && r.status !== 'RESOLVED')
+      .slice(-1)[0];
     return delay({
       machine: m && live(m),
       hasPreviousUser: !!session,
       isMine: session?.user_id === mock.ME,
       myRequest,
+      faultReport,
     });
+  },
+
+  /* ---------- 고장 신고 ---------- */
+
+  /**
+   * 고장 신고 — 접수되면 기기를 바로 '점검 중'으로 바꾼다 (관리자가 점검을 마치면 해제).
+   * 이미 점검 중이면 새로 만들지 않고 진행 중인 신고를 돌려준다.
+   * TODO(백엔드): 사진은 업로드 후 URL 저장, 관리자에게 알림, 점검 중 기기의 예약자에게 안내
+   */
+  createFaultReport: async (
+    machineId: string,
+    input: { category: FaultCategory; description: string; photos: string[] },
+  ): Promise<FaultReport> => {
+    const m = mock.machines.find((x) => x.machine_id === machineId);
+    if (!m) throw new Error('NOT_FOUND' satisfies FaultReportError);
+    const open = mock.faultReports.find((r) => r.machine_id === machineId && r.status !== 'RESOLVED');
+    if (open && m.current_status === 'MAINTENANCE') return delay(open);
+
+    const report: FaultReport = {
+      report_id: `fr-${Date.now()}`,
+      machine_id: machineId,
+      reporter_user_id: mock.ME,
+      category: input.category,
+      description: input.description.trim().slice(0, POLICY.faultReport.maxDescription),
+      photo_urls: input.photos.slice(0, POLICY.faultReport.maxPhotos),
+      reported_at: new Date().toISOString(),
+      status: 'OPEN',
+    };
+    mock.faultReports.push(report);
+    m.current_status = 'MAINTENANCE';
+    m.maintenance_since = report.reported_at;
+    m.started_at = undefined;
+    const name = `${m.machine_number}번 ${m.machine_type === 'DRYER' ? '건조기' : '세탁기'}`;
+    mock.notifications.unshift({
+      id: `n-${report.report_id}`,
+      type: 'SYSTEM',
+      message: `${name} 고장 신고가 접수됐어요. 점검이 끝날 때까지 '점검 중'으로 표시돼요.`,
+      created_at: report.reported_at,
+      read: false,
+    });
+    return delay(report, 500);
   },
 
   /** 내 세탁기에 들어온 처리 전 수거 요청 */

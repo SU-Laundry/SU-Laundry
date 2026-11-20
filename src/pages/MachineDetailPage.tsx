@@ -1,13 +1,13 @@
 import { useCallback, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { BellRing, CheckCircle2, Shirt } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { BellRing, CheckCircle2, Shirt, Wrench } from 'lucide-react';
 import { Page } from '@/app/AppShell';
 import { StatusBadge } from '@/components/StatusBadge';
 import { InfoBanner } from '@/components/InfoBanner';
 import { ConfirmSheet } from '@/components/ConfirmSheet';
 import { api } from '@/services/api';
 import { useAsync } from '@/services/useAsync';
-import { HINT, displayOf } from '@/domain/status';
+import { TYPE_LABEL, displayOf, hintOf, machineName } from '@/domain/status';
 import type { PickupRequest } from '@/domain/types';
 
 const fmtTime = (iso?: string) =>
@@ -22,9 +22,10 @@ export default function MachineDetailPage() {
   const [error, setError] = useState<string>();
   const closeSheet = useCallback(() => setSheetOpen(false), []);
 
-  if (loading) return <Page back title="세탁기 정보"><p className="caption">불러오는 중…</p></Page>;
+  if (loading) return <Page back title="기기 정보"><p className="caption">불러오는 중…</p></Page>;
   const m = data?.machine;
-  if (!data || !m) return <Page back title="세탁기 정보"><p className="caption">세탁기를 찾을 수 없어요</p></Page>;
+  if (!data || !m) return <Page back title="기기 정보"><p className="caption">기기를 찾을 수 없어요</p></Page>;
+  const typeLabel = TYPE_LABEL[m.machine_type];
 
   const status = sent ? 'WAITING_PICKUP' : m.current_status;
   const display = displayOf(status);
@@ -48,22 +49,42 @@ export default function MachineDetailPage() {
   };
 
   return (
-    <Page back title={`${m.machine_number}번 세탁기`}>
+    <Page back title={machineName(m)}>
       <div className="stack">
         <section className="card card-xl">
           <StatusBadge status={status} />
-          <p style={{ marginTop: 'var(--space-3)' }}>{HINT[status]}</p>
+          <p style={{ marginTop: 'var(--space-3)' }}>{hintOf(status, m.machine_type)}</p>
           <dl style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 16px', marginTop: 'var(--space-4)' }} className="caption">
-            <dt>세탁 시작</dt>
-            <dd style={{ margin: 0, color: 'var(--color-text-main)' }}>{fmtTime(m.started_at)}</dd>
-            <dt>예약</dt>
-            <dd style={{ margin: 0, color: 'var(--color-text-main)' }}>{m.reserved_from ? `${m.reserved_from} 예약` : '없음'}</dd>
+            {display === 'MAINTENANCE' ? (
+              <>
+                <dt>점검 시작</dt>
+                <dd style={{ margin: 0, color: 'var(--color-text-main)' }}>{fmtTime(m.maintenance_since)}</dd>
+              </>
+            ) : (
+              <>
+                <dt>{m.machine_type === 'DRYER' ? '건조 시작' : '세탁 시작'}</dt>
+                <dd style={{ margin: 0, color: 'var(--color-text-main)' }}>{fmtTime(m.started_at)}</dd>
+                {m.machine_type === 'WASHER' && (
+                  <>
+                    <dt>예약</dt>
+                    <dd style={{ margin: 0, color: 'var(--color-text-main)' }}>{m.reserved_from ? `${m.reserved_from} 예약` : '없음'}</dd>
+                  </>
+                )}
+              </>
+            )}
           </dl>
         </section>
 
+        {display === 'MAINTENANCE' && (
+          <InfoBanner icon={Wrench} title="점검 중이라 지금은 쓸 수 없어요" color="var(--status-maintenance)" bg="var(--status-maintenance-bg)">
+            {data.faultReport ? `${fmtTime(data.faultReport.reported_at)}에 고장 신고가 접수됐어요. ` : ''}
+            점검이 끝나면 다시 사용할 수 있어요. 다른 {typeLabel}를 이용해주세요.
+          </InfoBanner>
+        )}
+
         {data.isMine && display === 'DONE' && (
           <InfoBanner icon={Shirt} title="내 세탁물이에요" color="var(--status-pickup)" bg="var(--status-pickup-bg)">
-            세탁이 끝났어요. 다음 사람을 위해 수거하러 가볼까요?
+            {m.machine_type === 'DRYER' ? '건조' : '세탁'}가 끝났어요. 다음 사람을 위해 수거하러 가볼까요?
           </InfoBanner>
         )}
 
@@ -103,11 +124,26 @@ export default function MachineDetailPage() {
             )}
           </section>
         )}
+
+        {/* 고장 신고 — 점검 중이 아닐 때만. 주요 동작보다 눈에 덜 띄게 */}
+        {display !== 'MAINTENANCE' && (
+          <section style={{ textAlign: 'center' }}>
+            <p className="caption">{typeLabel}에 문제가 있나요?</p>
+            <Link
+              to={`/machines/${m.machine_id}/report`}
+              className="btn btn-tertiary"
+              style={{ marginTop: 'var(--space-2)', background: 'var(--color-surface)', color: 'var(--color-text-sub)' }}
+            >
+              <Wrench size={18} aria-hidden />
+              고장 신고하기
+            </Link>
+          </section>
+        )}
       </div>
 
       <ConfirmSheet
         open={sheetOpen}
-        title={`${m.machine_number}번 세탁기에 세탁물이 남아 있나요?`}
+        title={`${machineName(m)}에 세탁물이 남아 있나요?`}
         confirmLabel="알림 보내기"
         busy={sending}
         onConfirm={send}

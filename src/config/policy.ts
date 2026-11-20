@@ -14,6 +14,13 @@ export const POLICY = {
   sensorStaleSeconds: 120,
   /** 한 사용자가 동시에 가질 수 있는 예약 수 */
   maxActiveReservationsPerUser: 1,
+  /**
+   * 노쇼(예약 후 미이용 자동 해제) 패널티 — 누적 limit회가 되면 restrictDays일 동안 예약 불가.
+   * 제한이 끝나면 횟수는 다시 0부터 센다. (2026-11-21 사용자 결정: 3회 → 한 달)
+   */
+  noShow: { limit: 3, restrictDays: 30 },
+  /** 고장 신고 사진 첨부 */
+  faultReport: { maxPhotos: 3, photoMaxEdge: 1280, photoQuality: 0.8, maxDescription: 300 },
   /** 같은 세션에 대해 한 사람이 수거 요청을 다시 보낼 수 있는 간격 (중복·도배 방지) */
   pickupRequestCooldownMinutes: 10,
   /**

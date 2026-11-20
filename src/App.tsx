@@ -14,6 +14,7 @@ import DormSelectPage from '@/pages/DormSelectPage';
 import LaundryDonePage from '@/pages/LaundryDonePage';
 import ReservationsPage from '@/pages/ReservationsPage';
 import HelpPage from '@/pages/HelpPage';
+import FaultReportPage from '@/pages/FaultReportPage';
 import { RootGate } from '@/app/RootGate';
 import { DormProvider } from '@/app/DormContext';
 
@@ -37,6 +38,7 @@ const router = createBrowserRouter([
         element: <StackLayout />,
         children: [
           { path: '/machines/:machineId', element: <MachineDetailPage /> },
+          { path: '/machines/:machineId/report', element: <FaultReportPage /> },
           { path: '/my-laundry', element: <MyLaundryPage /> },
           { path: '/reserve/done', element: <ReserveDonePage /> },
           { path: '/select-dorm', element: <DormSelectPage /> },

@@ -27,6 +27,8 @@
   --status-reserved-bg: #f1ecff;
   --status-error: #f15b5b;
   --status-error-bg: #fdecec;
+  --status-maintenance: #64748b; /* 점검 중 — 사용 불가를 차분한 회색으로 */
+  --status-maintenance-bg: #edf0f5;
 
   /* radius */
   --radius-xl: 24px;

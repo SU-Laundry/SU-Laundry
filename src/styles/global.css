@@ -265,6 +265,8 @@ p {
 .caption {
   font-size: var(--fs-caption);
   color: var(--color-text-sub);
+  word-break: keep-all; /* 한글 단어 중간에서 줄바꿈하지 않게 */
+  overflow-wrap: break-word;
 }
 
 /* 가로 스와이프 영역의 스크롤바 숨김 (스크롤 기능은 유지) */
@@ -780,4 +782,81 @@ p {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* ---------- 입력 · 사진 첨부 (고장 신고) ---------- */
+.input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-input);
+  background: var(--color-surface);
+  color: var(--color-text-main);
+  font: inherit;
+  font-size: 16px; /* 16px 미만이면 iOS 사파리가 확대함 */
+  line-height: 1.5;
+  resize: vertical;
+}
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+.photo-thumb,
+.photo-add {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.photo-thumb button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  display: grid;
+  place-items: start end;
+  padding: 6px;
+  color: #fff;
+}
+.photo-thumb button svg {
+  background: rgba(31, 45, 61, 0.6);
+  border-radius: 50%;
+  padding: 2px;
+  box-sizing: content-box;
+}
+.photo-add {
+  border: 1.5px dashed var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-sub);
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  font-size: var(--fs-caption);
+}
+
+/* 예약 규칙 목록 */
+.rules {
+  margin: var(--space-3) 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--fs-caption);
+  line-height: 1.55;
+  color: var(--color-text-main);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.rules strong {
+  font-weight: 700;
 }

@@ -23,6 +23,9 @@ export default function HomePage() {
   }, [dormId]);
 
   const count = (s: DisplayStatus) => data?.machines.filter((m) => displayOf(m.current_status) === s).length ?? 0;
+  const availableOf = (t: 'WASHER' | 'DRYER') =>
+    data?.machines.filter((m) => m.machine_type === t && displayOf(m.current_status) === 'AVAILABLE').length ?? 0;
+  const hasDryers = !!data?.machines.some((m) => m.machine_type === 'DRYER');
   const peak = data?.policy ? isPeakNow(data.policy) : false;
 
   return (
@@ -61,10 +64,15 @@ export default function HomePage() {
               <ChevronDown size={16} aria-hidden />
             </Link>
             <h2 style={{ fontSize: 'var(--fs-page)', fontWeight: 700, marginTop: 'var(--space-2)', lineHeight: 1.35 }}>
-              지금 {count('AVAILABLE')}대
+              지금 세탁기 {availableOf('WASHER')}대
               <br />
               이용 가능해요
             </h2>
+            {hasDryers && (
+              <p style={{ marginTop: 'var(--space-1)', fontSize: 'var(--fs-caption)', opacity: 0.9 }}>
+                건조기는 {availableOf('DRYER')}대 비어 있어요
+              </p>
+            )}
           </div>
           <Character which="right" size={104} />
         </section>

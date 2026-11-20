@@ -22,6 +22,7 @@ export default function ReservationsPage() {
   const { dormId = '' } = useDorm();
   const dormName = dormitories.find((d) => d.dormitory_id === dormId)?.name ?? '';
   const { data, reload } = useAsync(() => api.getMyReservations(dormId), [dormId]);
+  const { data: noShow, reload: reloadNoShow } = useAsync(() => api.getNoShowStatus());
   const [cancelTarget, setCancelTarget] = useState<ReservationView>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -38,6 +39,7 @@ export default function ReservationsPage() {
       await api.cancelReservation(cancelTarget.reservation_id);
       setCancelTarget(undefined);
       reload();
+      reloadNoShow();
     } catch (e) {
       setCancelTarget(undefined);
       setError((e as Error).message === 'STARTED' ? '이미 시작된 예약은 취소할 수 없어요.' : '취소하지 못했어요. 잠시 후 다시 시도해주세요.');
@@ -125,7 +127,15 @@ export default function ReservationsPage() {
           </section>
 
           <p className="caption">
-            예약 시간 {POLICY.graceTimeMinutes}분 안에 사용이 확인되지 않으면 자동으로 해제돼요. 예약은 시작 전까지 취소할 수 있어요.
+            예약 시간 {POLICY.graceTimeMinutes}분 안에 사용이 확인되지 않으면 노쇼로 자동 해제돼요. 노쇼가 {POLICY.noShow.limit}회 쌓이면{' '}
+            {POLICY.noShow.restrictDays === 30 ? '한 달' : `${POLICY.noShow.restrictDays}일`} 동안 예약할 수 없어요. 예약은 시작 전까지 취소할 수 있어요.
+            {noShow && (
+              <strong style={{ display: 'block', marginTop: 4, color: noShow.count > 0 ? 'var(--status-error)' : undefined }}>
+                {noShow.restrictedUntil
+                  ? `${new Date(noShow.restrictedUntil).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}까지 예약 제한 중`
+                  : `내 노쇼 ${noShow.count}/${noShow.limit}회`}
+              </strong>
+            )}
           </p>
         </div>
       )}

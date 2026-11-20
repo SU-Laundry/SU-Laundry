@@ -5,9 +5,11 @@ import { useDorm } from '@/app/DormContext';
 import { MachineCard } from '@/components/MachineCard';
 import { api } from '@/services/api';
 import { useAsync } from '@/services/useAsync';
-import { DISPLAY_META, displayOf, type DisplayStatus } from '@/domain/status';
+import { DISPLAY_META, TYPE_LABEL, displayOf, type DisplayStatus } from '@/domain/status';
+import type { MachineType } from '@/domain/types';
 
-const FILTERS: (DisplayStatus | 'ALL')[] = ['ALL', 'AVAILABLE', 'IN_USE', 'DONE', 'RESERVED'];
+const FILTERS: (DisplayStatus | 'ALL')[] = ['ALL', 'AVAILABLE', 'IN_USE', 'DONE', 'RESERVED', 'MAINTENANCE'];
+const TYPES: MachineType[] = ['WASHER', 'DRYER'];
 
 /** 세탁실 현황 — 가장 많이 쓰는 화면, 확인 속도 최우선 */
 export default function RoomPage() {
@@ -18,7 +20,8 @@ export default function RoomPage() {
     return { dorm, machines: await api.getMachines(room?.laundry_room_id ?? '') };
   }, [dormId]);
 
-  const list = (data?.machines ?? []).filter((m) => filter === 'ALL' || displayOf(m.current_status) === filter);
+  const all = data?.machines ?? [];
+  const list = all.filter((m) => filter === 'ALL' || displayOf(m.current_status) === filter);
 
   return (
     <Page
@@ -63,13 +66,32 @@ export default function RoomPage() {
         <p className="caption">불러오는 중…</p>
       ) : list.length === 0 ? (
         <p className="caption" style={{ textAlign: 'center', padding: 'var(--space-7) 0' }}>
-          해당하는 세탁기가 없어요
+          해당하는 기기가 없어요
         </p>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
-          {list.map((m) => (
-            <MachineCard key={m.machine_id} machine={m} />
-          ))}
+        <div className="stack">
+          {/* 세탁기 / 건조기 구역을 나눠서 — 필터에 해당하는 기기가 없는 구역은 숨김 */}
+          {TYPES.map((t) => {
+            const items = list.filter((m) => m.machine_type === t);
+            if (!items.length) return null;
+            const total = all.filter((m) => m.machine_type === t).length;
+            const available = all.filter((m) => m.machine_type === t && displayOf(m.current_status) === 'AVAILABLE').length;
+            return (
+              <section key={t}>
+                <h2 className="section-title" style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' }}>
+                  {TYPE_LABEL[t]}
+                  <span className="caption">
+                    {total}대 중 {available}대 사용 가능
+                  </span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                  {items.map((m) => (
+                    <MachineCard key={m.machine_id} machine={m} />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </div>
       )}
     </Page>

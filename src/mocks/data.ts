@@ -4,6 +4,7 @@ import { DEFAULT_PEAK } from '@/config/policy';
 import type {
   AppNotification,
   Dormitory,
+  FaultReport,
   LaundryRoom,
   LaundrySession,
   Machine,
@@ -18,13 +19,16 @@ const minsAgo = (m: number) => new Date(now - m * 60_000).toISOString();
 
 export const ME = 'me';
 
-/** 생활관 목록 (표시 순서 그대로) — 세탁기 수는 2026 운영 제안요청서 기준 */
+/**
+ * 생활관 목록 (표시 순서 그대로) — 세탁기 수는 2026 운영 제안요청서 기준.
+ * 건조기 수는 아직 확인 전이라 임시 값 (확인되면 고친다).
+ */
 const DORM_SPECS = [
-  { dormitory_id: 'zion', name: '시온관', washers: 8 },
-  { dormitory_id: 'peniel', name: '브니엘관', washers: 7 },
-  { dormitory_id: 'salem', name: '살렘관', washers: 7 },
-  { dormitory_id: 'eden', name: '에덴관', washers: 10 },
-  { dormitory_id: 'newstart', name: '뉴스타트관', washers: 2 },
+  { dormitory_id: 'zion', name: '시온관', washers: 8, dryers: 4 },
+  { dormitory_id: 'peniel', name: '브니엘관', washers: 7, dryers: 4 },
+  { dormitory_id: 'salem', name: '살렘관', washers: 7, dryers: 4 },
+  { dormitory_id: 'eden', name: '에덴관', washers: 10, dryers: 5 },
+  { dormitory_id: 'newstart', name: '뉴스타트관', washers: 2, dryers: 1 },
 ];
 
 export const dormitories: Dormitory[] = DORM_SPECS.map(({ dormitory_id, name }) => ({ dormitory_id, name }));
@@ -57,6 +61,9 @@ const PATTERN: MachineStatus[] = [
   'AVAILABLE',
 ];
 
+/** 건조기 n번의 상태 패턴. 4번은 고장 신고로 점검 중 (뉴스타트관은 1대라 없음) */
+const DRYER_PATTERN: MachineStatus[] = ['AVAILABLE', 'IN_USE', 'COMPLETED', 'MAINTENANCE', 'AVAILABLE'];
+
 const STARTED_MINS: Partial<Record<MachineStatus, number>> = {
   IN_USE: 20,
   COMPLETED: 55,
@@ -67,6 +74,7 @@ const STARTED_MINS: Partial<Record<MachineStatus, number>> = {
 
 export const sessions: LaundrySession[] = [];
 export const machines: Machine[] = [];
+export const faultReports: FaultReport[] = [];
 
 for (const d of DORM_SPECS) {
   for (let n = 1; n <= d.washers; n++) {
@@ -101,6 +109,49 @@ for (const d of DORM_SPECS) {
       current_session_id: session?.session_id,
     });
   }
+
+  // 건조기 — 번호는 세탁기와 따로 1번부터. 내 세탁물(3번 세탁기)과는 무관한 다른 사람 세션
+  for (let n = 1; n <= d.dryers; n++) {
+    const status = DRYER_PATTERN[(n - 1) % DRYER_PATTERN.length];
+    const machine_id = `${d.dormitory_id}-d${n}`;
+    const started = STARTED_MINS[status];
+    let session: LaundrySession | undefined;
+    if (started !== undefined) {
+      session = {
+        session_id: `s-${machine_id}`,
+        user_id: `u-${machine_id}`,
+        machine_id,
+        started_at: minsAgo(started + n),
+        completed_at: status === 'IN_USE' ? undefined : minsAgo(started - 50),
+      };
+      sessions.push(session);
+    }
+    const maintenance_since = status === 'MAINTENANCE' ? minsAgo(150) : undefined;
+    if (maintenance_since) {
+      faultReports.push({
+        report_id: `fr-${machine_id}`,
+        machine_id,
+        reporter_user_id: 'u-other',
+        category: 'NOT_DRYING',
+        description: '돌아가긴 하는데 열이 안 나와요.',
+        photo_urls: [],
+        reported_at: maintenance_since,
+        status: 'IN_PROGRESS',
+      });
+    }
+    machines.push({
+      machine_id,
+      laundry_room_id: `${d.dormitory_id}-room`,
+      machine_number: n,
+      machine_type: 'DRYER',
+      current_status: status,
+      sensor_node_id: `node-${machine_id}`,
+      last_seen_at: minsAgo(0),
+      started_at: status === 'AVAILABLE' || status === 'MAINTENANCE' ? undefined : session?.started_at,
+      current_session_id: session?.session_id,
+      maintenance_since,
+    });
+  }
 }
 
 /** 수거 요청 — 각 생활관 내 세탁기(3번)에 다음 사용자가 이미 한 번 요청한 상태 (받은 쪽 화면 시연용) */
@@ -116,7 +167,10 @@ export const pickupRequests: PickupRequest[] = machines
     resolution: 'PENDING' as const,
   }));
 
-/** 지난 예약 기록 — 각 생활관마다 이용 완료 / 미이용 자동 해제 / 취소 1건씩 (예약 내역 화면 시연용) */
+/**
+ * 지난 예약 기록 — 각 생활관마다 이용 완료 / 취소 등 3건씩 (예약 내역 화면 시연용).
+ * 노쇼(미이용 자동 해제)는 사용자 기준으로 누적되므로 시온관에만 1건 둔다 (1/3회 상태 시연).
+ */
 const daysAgoAt = (days: number, hhmm: string) => {
   const t = new Date(now);
   t.setDate(t.getDate() - days);
@@ -139,7 +193,8 @@ export const reservations: Reservation[] = DORM_SPECS.flatMap((d) => {
       checked_in_at: status === 'DONE' ? new Date(start.getTime() + 4 * 60_000).toISOString() : undefined,
     };
   };
-  return [past('a', 1, '19:00', 2, 'DONE'), past('b', 2, '20:00', 5, 'AUTO_RELEASED'), past('c', 3, '18:00', 1, 'CANCELLED')];
+  const b = d.dormitory_id === 'zion' ? 'AUTO_RELEASED' : 'DONE';
+  return [past('a', 1, '19:00', 2, 'DONE'), past('b', 2, '20:00', 5, b), past('c', 3, '18:00', 1, 'CANCELLED')];
 });
 
 export const notifications: AppNotification[] = [
