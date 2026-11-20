@@ -7,13 +7,9 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { api } from '@/services/api';
 import { useAsync } from '@/services/useAsync';
 import { isPeakNow } from '@/domain/peak';
-import type { MachineStatus } from '@/domain/types';
+import { DISPLAY_META, displayOf, type DisplayStatus } from '@/domain/status';
 
-const SUMMARY: { status: MachineStatus; label: string }[] = [
-  { status: 'AVAILABLE', label: '사용 가능' },
-  { status: 'IN_USE', label: '사용 중' },
-  { status: 'WAITING_PICKUP', label: '수거 대기' },
-];
+const SUMMARY: DisplayStatus[] = ['AVAILABLE', 'IN_USE', 'DONE'];
 
 export default function HomePage() {
   const { data } = useAsync(async () => {
@@ -23,14 +19,16 @@ export default function HomePage() {
       api.getRoomsByDormitory(user.dormitory_id),
       api.getMachines(user.laundry_room_id),
     ]);
-    const policy = await api.getPeakPolicy(rooms[0]?.peak_policy_id ?? 'default');
+    const [policy, requestsForMe] = await Promise.all([
+      api.getPeakPolicy(rooms[0]?.peak_policy_id ?? 'default'),
+      api.getPickupRequestsForMe(),
+    ]);
     const dorm = dorms.find((d) => d.dormitory_id === user.dormitory_id);
     const mine = machines.find((m) => m.machine_id === user.machine_id);
-    return { dorm, machines, policy, mine };
+    return { dorm, machines, policy, mine, requestsForMe };
   });
 
-  const count = (s: MachineStatus) =>
-    data?.machines.filter((m) => m.current_status === s || (s === 'WAITING_PICKUP' && m.current_status === 'COMPLETED')).length ?? 0;
+  const count = (s: DisplayStatus) => data?.machines.filter((m) => displayOf(m.current_status) === s).length ?? 0;
   const peak = data?.policy ? isPeakNow(data.policy) : false;
 
   return (
@@ -61,10 +59,10 @@ export default function HomePage() {
         {/* 상태 요약 */}
         <section>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-3)' }}>
-            {SUMMARY.map(({ status, label }) => (
-              <div key={status} className="card" style={{ textAlign: 'center', padding: 'var(--space-3)' }}>
-                <p style={{ fontSize: 'var(--fs-display)', fontWeight: 700 }}>{count(status)}</p>
-                <p className="caption">{label}</p>
+            {SUMMARY.map((s) => (
+              <div key={s} className="card" style={{ textAlign: 'center', padding: 'var(--space-3)' }}>
+                <p style={{ fontSize: 'var(--fs-display)', fontWeight: 700 }}>{count(s)}</p>
+                <p className="caption">{DISPLAY_META[s].label}</p>
               </div>
             ))}
           </div>
@@ -100,6 +98,11 @@ export default function HomePage() {
                 <div style={{ marginTop: 'var(--space-2)' }}>
                   <StatusBadge status={data.mine.current_status} />
                 </div>
+                {data.requestsForMe.length > 0 && (
+                  <p className="caption" style={{ marginTop: 'var(--space-2)', color: 'var(--status-pickup)', fontWeight: 600 }}>
+                    다음 사용자가 수거를 요청했어요
+                  </p>
+                )}
               </div>
               <ChevronRight size={20} color="var(--color-text-sub)" />
             </Link>

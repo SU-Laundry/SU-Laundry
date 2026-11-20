@@ -34,6 +34,8 @@ export interface Machine {
   started_at?: string;
   /** 다음 예약 시작 시각 "HH:mm" (RESERVED) */
   reserved_from?: string;
+  /** 마지막(현재) 세탁 세션 — 수거 요청 시 "이전 사용자"를 찾는 기준 */
+  current_session_id?: string;
 }
 
 export type ReservationStatus = 'BOOKED' | 'CHECKED_IN' | 'CANCELLED' | 'AUTO_RELEASED' | 'DONE';
@@ -55,6 +57,29 @@ export interface LaundrySession {
   started_at: string;
   completed_at?: string;
   pickup_action_at?: string;
+}
+
+/**
+ * 수거 요청 ("세탁물이 남아 있어요" 신고)
+ * 추후 벌점 제도: target_user_id 기준으로 resolution이 CONFIRMED인 요청을 누적해 벌점 산정 예정.
+ * 그래서 신고자·대상자·세션·처리 결과를 모두 남긴다.
+ */
+export type PickupRequestResolution =
+  | 'PENDING' // 요청됨, 아직 처리 전
+  | 'CONFIRMED' // 세탁물이 실제로 남아 있었음 (벌점 집계 대상)
+  | 'DISMISSED'; // 허위/착오로 판단 (벌점 집계 제외, 반복 시 신고자 쪽 검토)
+
+export interface PickupRequest {
+  request_id: string;
+  machine_id: string;
+  session_id: string;
+  /** 신고한 사람 (다음 사용자) */
+  reporter_user_id: string;
+  /** 알림 받는 사람 (이전 사용자) — 벌점 대상 */
+  target_user_id: string;
+  requested_at: string;
+  resolved_at?: string;
+  resolution: PickupRequestResolution;
 }
 
 export interface PeakPolicy {

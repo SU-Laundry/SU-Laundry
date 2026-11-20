@@ -1,9 +1,9 @@
-import { STATUS_META } from '@/domain/status';
+import { DISPLAY_META, DISPLAY_OF } from '@/domain/status';
 import type { MachineStatus } from '@/domain/types';
 
-/** pill 배지 — 상태색 + 아이콘 + 텍스트를 항상 함께 표시 */
+/** pill 배지 — 상태색 + 아이콘 + 텍스트를 항상 함께 표시 (내부 상태 → 화면 상태로 묶어서) */
 export function StatusBadge({ status }: { status: MachineStatus }) {
-  const m = STATUS_META[status];
+  const m = DISPLAY_META[DISPLAY_OF[status]];
   const Icon = m.icon;
   return (
     <span

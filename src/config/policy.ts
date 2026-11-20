@@ -11,4 +11,16 @@ export const POLICY = {
   sensorStaleSeconds: 120,
   /** 한 사용자가 동시에 가질 수 있는 예약 수 */
   maxActiveReservationsPerUser: 1,
+  /** 같은 세션에 대해 한 사람이 수거 요청을 다시 보낼 수 있는 간격 (중복·도배 방지) */
+  pickupRequestCooldownMinutes: 10,
+  /**
+   * (예정) 벌점 제도 — 아직 미적용, 값도 미확정.
+   * CONFIRMED 된 수거 요청을 대상자에게 누적해 기준을 넘으면 예약 제한 등에 사용.
+   */
+  penalty: {
+    enabled: false,
+    pointsPerConfirmedRequest: 1,
+    restrictThreshold: 3,
+    windowDays: 30,
+  },
 } as const;

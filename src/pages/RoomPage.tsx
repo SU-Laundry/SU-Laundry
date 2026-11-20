@@ -3,25 +3,20 @@ import { Page } from '@/app/AppShell';
 import { MachineCard } from '@/components/MachineCard';
 import { api } from '@/services/api';
 import { useAsync } from '@/services/useAsync';
-import { STATUS_META } from '@/domain/status';
-import type { MachineStatus } from '@/domain/types';
+import { DISPLAY_META, displayOf, type DisplayStatus } from '@/domain/status';
 
-const FILTERS: (MachineStatus | 'ALL')[] = ['ALL', 'AVAILABLE', 'IN_USE', 'WAITING_PICKUP', 'RESERVED'];
+const FILTERS: (DisplayStatus | 'ALL')[] = ['ALL', 'AVAILABLE', 'IN_USE', 'DONE', 'RESERVED'];
 
 /** 세탁실 현황 — 가장 많이 쓰는 화면, 확인 속도 최우선 */
 export default function RoomPage() {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('ALL');
   const { data: machines, loading } = useAsync(() => api.getMachines('zion-b1'));
 
-  const list = (machines ?? []).filter((m) => {
-    if (filter === 'ALL') return true;
-    if (filter === 'WAITING_PICKUP') return m.current_status === 'WAITING_PICKUP' || m.current_status === 'COMPLETED';
-    return m.current_status === filter;
-  });
+  const list = (machines ?? []).filter((m) => filter === 'ALL' || displayOf(m.current_status) === filter);
 
   return (
     <Page title="시온관 B1 세탁실">
-      <div role="tablist" style={{ display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', paddingBottom: 'var(--space-4)' }}>
+      <div role="tablist" className="no-scrollbar" style={{ display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', paddingBottom: 'var(--space-4)' }}>
         {FILTERS.map((f) => {
           const active = f === filter;
           return (
@@ -42,7 +37,7 @@ export default function RoomPage() {
                 color: active ? '#fff' : 'var(--color-text-main)',
               }}
             >
-              {f === 'ALL' ? '전체' : STATUS_META[f].label}
+              {f === 'ALL' ? '전체' : DISPLAY_META[f].label}
             </button>
           );
         })}

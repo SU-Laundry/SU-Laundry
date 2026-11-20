@@ -25,13 +25,15 @@ export function RootGate() {
   }, []);
 
   if (!prefs.isOnboarded() && pathname !== '/onboarding') {
+    // 첫 실행이면 온보딩으로 (스플래시는 온보딩 화면 위에 그대로 표시됨)
     return <Navigate to="/onboarding" replace />;
   }
 
+  // .device: 실제 폰에선 화면 전체, PC 화면에선 폰 모양 프레임 (global.css 참고)
   return (
-    <>
+    <div className="device">
       <Outlet />
       {phase !== 'done' && <SplashScreen leaving={phase === 'leaving'} />}
-    </>
+    </div>
   );
 }

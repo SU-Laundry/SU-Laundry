@@ -45,18 +45,52 @@ p {
   outline-offset: 2px;
 }
 
-/* ---------- 모바일 앱 프레임 ---------- */
-.app-frame {
-  position: relative;
+/* ---------- 디바이스 프레임 ----------
+ * 실제 폰: 보이는 화면 높이(100dvh) 전체를 사용. 세로 길이는 기기에 맞춰 늘고 준다.
+ * PC(넓고 높은 화면 + 마우스): 아래 미디어쿼리에서 폰 모양(최대 932px, 둥근 베젤)으로 표시 — 발표·시연용.
+ */
+#root {
+  display: flex;
+  justify-content: center;
+}
+
+.device {
+  position: relative; /* 스플래시·하단 시트의 기준 */
+  width: 100%;
   max-width: var(--frame-max);
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.app-frame {
   height: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
-  margin: 0 auto;
   background: var(--color-bg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+@media (min-width: 600px) and (min-height: 720px) and (hover: hover) and (pointer: fine) {
+  #root {
+    align-items: center;
+    padding: var(--space-6);
+  }
+  body {
+    background: radial-gradient(circle at 50% 30%, #f4f8ff 0%, #e2e9f4 70%);
+  }
+  .device {
+    height: min(932px, calc(100dvh - 48px));
+    border-radius: 48px;
+    box-shadow:
+      0 0 0 10px #1f2d3d,
+      0 0 0 11px #3a4a5e,
+      0 30px 80px rgba(31, 45, 61, 0.28);
+    /* 폰의 상태바·홈 인디케이터 자리를 흉내 내서 둥근 모서리에 내용이 붙지 않게 */
+    --safe-top: 28px;
+    --safe-bottom: 14px;
+  }
 }
 
 .app-header {
@@ -98,6 +132,14 @@ p {
 .caption {
   font-size: var(--fs-caption);
   color: var(--color-text-sub);
+}
+
+/* 가로 스와이프 영역의 스크롤바 숨김 (스크롤 기능은 유지) */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* ---------- 카드 ---------- */
@@ -185,12 +227,9 @@ p {
 
 /* ---------- 스플래시 ---------- */
 .splash {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 100;
-  width: 100%;
-  max-width: var(--frame-max);
-  margin: 0 auto;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -371,6 +410,48 @@ p {
   border-color: var(--status-reserved);
   background: var(--status-reserved-bg);
   color: var(--status-reserved);
+}
+
+/* ---------- 하단 확인 시트 ---------- */
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.sheet-backdrop {
+  position: absolute; /* .device 기준 */
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(31, 45, 61, 0.4);
+  animation: fade-in 0.2s ease-out both;
+}
+.sheet {
+  width: 100%;
+  background: var(--color-surface);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: var(--space-3) var(--space-5) calc(var(--safe-bottom) + var(--space-5));
+  animation: sheet-up 0.25s ease-out both;
+}
+.sheet__handle {
+  display: block;
+  width: 40px;
+  height: 4px;
+  margin: 0 auto var(--space-5);
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
 }
 
 @media (prefers-reduced-motion: reduce) {
