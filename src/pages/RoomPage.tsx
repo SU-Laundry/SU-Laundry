@@ -35,7 +35,8 @@ export default function RoomPage() {
         </Link>
       }
     >
-      <div role="tablist" className="no-scrollbar" style={{ display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', paddingBottom: 'var(--space-4)' }}>
+      {/* 필터 6개 — 한 줄에 다 안 들어가서 가로 스크롤 시 잘려 보였음 → 3열 2줄로 전부 보이게 */}
+      <div role="tablist" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-2)', paddingBottom: 'var(--space-4)' }}>
         {FILTERS.map((f) => {
           const active = f === filter;
           return (
@@ -45,9 +46,9 @@ export default function RoomPage() {
               aria-selected={active}
               onClick={() => setFilter(f)}
               style={{
-                flex: 'none',
-                height: 36,
-                padding: '0 14px',
+                minHeight: 40,
+                padding: '0 8px',
+                whiteSpace: 'nowrap',
                 borderRadius: 'var(--radius-pill)',
                 border: 0,
                 fontSize: 'var(--fs-caption)',
